@@ -1,0 +1,2525 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>ARZ QR Generator</title>
+
+<style>
+*{
+    box-sizing:border-box;
+    margin:0;
+    padding:0;
+}
+
+body{
+    font-family:Arial,sans-serif;
+    background:#000;
+    color:#fff;
+    font-weight:bold;
+}
+
+button,
+input,
+textarea,
+select{
+    font-family:Arial,sans-serif;
+    font-weight:bold;
+}
+
+#loadingScreen{
+    position:fixed;
+    inset:0;
+    z-index:99999;
+    background:#000;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+}
+
+#loadingScreen img{
+    width:100%;
+    height:100%;
+    object-fit:cover;
+}
+
+header{
+    text-align:center;
+    padding:22px 15px;
+    border-bottom:2px solid #ffd700;
+}
+
+header h1{
+    color:#ffd700;
+    font-size:28px;
+}
+
+header p{
+    margin-top:7px;
+    color:#fff;
+    font-size:13px;
+}
+
+.page{
+    display:none;
+    padding:15px;
+}
+
+.page.active{
+    display:block;
+}
+
+.menu{
+    display:grid;
+    gap:12px;
+}
+
+.menu button{
+    width:100%;
+    padding:17px;
+    background:#000;
+    color:#ffd700;
+    border:2px solid #ffd700;
+    border-radius:10px;
+    font-size:16px;
+}
+
+.section{
+    background:#050505;
+    border:2px solid #ffd700;
+    border-radius:12px;
+    padding:15px;
+    margin-bottom:15px;
+}
+
+.section h2{
+    color:#ffd700;
+    font-size:19px;
+    margin-bottom:12px;
+}
+
+label{
+    display:block;
+    color:#ffd700;
+    margin-top:13px;
+    margin-bottom:6px;
+}
+
+input,
+textarea,
+select{
+    width:100%;
+    padding:12px;
+    background:#000;
+    color:#fff;
+    border:2px solid #ffd700;
+    border-radius:8px;
+    outline:none;
+    font-size:14px;
+}
+
+textarea{
+    min-height:100px;
+    resize:vertical;
+}
+
+select option{
+    background:#000;
+    color:#fff;
+}
+
+.action{
+    width:100%;
+    padding:14px;
+    margin-top:11px;
+    border:none;
+    border-radius:9px;
+    background:#ffd700;
+    color:#000;
+    font-size:15px;
+}
+
+.secondary{
+    background:#000;
+    color:#ffd700;
+    border:2px solid #ffd700;
+}
+
+.colorGrid{
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:9px;
+}
+
+.colorBtn{
+    padding:12px 4px;
+    border:2px solid #fff;
+    border-radius:8px;
+    font-size:11px;
+}
+
+.colorBtn.active{
+    outline:3px solid #ffd700;
+    outline-offset:2px;
+}
+
+.info{
+    margin-top:10px;
+    padding:10px;
+    border:1px solid #444;
+    border-radius:8px;
+    color:#aaa;
+    font-size:12px;
+    line-height:1.5;
+}
+
+#qrArea{
+    display:none;
+    margin-top:18px;
+    padding:18px;
+    background:#fff;
+    border:3px solid #ffd700;
+    border-radius:12px;
+    text-align:center;
+}
+
+#qrTitle{
+    color:#000;
+    margin-bottom:12px;
+    word-break:break-word;
+}
+
+#qrCanvas{
+    display:block;
+    margin:auto;
+    max-width:100%;
+    height:auto;
+    background:#fff;
+}
+
+.historyItem{
+    padding:12px;
+    border:2px solid #ffd700;
+    border-radius:10px;
+    margin-bottom:10px;
+}
+
+.historyItem strong{
+    color:#ffd700;
+}
+
+.historyItem small{
+    display:block;
+    margin-top:6px;
+    color:#aaa;
+    word-break:break-word;
+}
+
+.historyButtons{
+    display:flex;
+    gap:8px;
+    margin-top:10px;
+}
+
+.historyButtons button{
+    flex:1;
+    padding:10px;
+    background:#000;
+    color:#ffd700;
+    border:1px solid #ffd700;
+    border-radius:7px;
+}
+
+.empty{
+    text-align:center;
+    padding:20px;
+    color:#888;
+}
+
+.popup{
+    display:none;
+    position:fixed;
+    inset:0;
+    z-index:100000;
+    background:rgba(0,0,0,.85);
+    justify-content:center;
+    align-items:center;
+    padding:20px;
+}
+
+.popupBox{
+    width:100%;
+    max-width:370px;
+    background:#050505;
+    border:2px solid #ffd700;
+    border-radius:13px;
+    padding:20px;
+    text-align:center;
+}
+
+.popupBox h3{
+    color:#ffd700;
+    margin-bottom:12px;
+}
+
+.popupBox p{
+    line-height:1.5;
+    margin-bottom:18px;
+}
+
+.popupButtons{
+    display:flex;
+    gap:10px;
+}
+
+.popupButtons button{
+    flex:1;
+    padding:12px;
+    border-radius:8px;
+    border:2px solid #ffd700;
+    background:#000;
+    color:#ffd700;
+}
+
+.popupButtons .yes{
+    background:#ffd700;
+    color:#000;
+}
+
+footer{
+    text-align:center;
+    padding:25px 10px;
+    color:#777;
+    font-size:11px;
+}
+</style>
+</head>
+
+<body>
+
+<!-- LOADING -->
+<div id="loadingScreen">
+    <img src="loading.png" alt="ARZ QR Generator">
+</div>
+
+<header>
+    <h1>ARZ QR Generator</h1>
+    <p>Generate QR Code dengan mudah</p>
+</header>
+
+<!-- HOME -->
+<div id="homePage" class="page active">
+
+    <div class="menu">
+
+        <button onclick="showPage('generatorPage')">
+            Buat Kode QR
+        </button>
+
+        <button onclick="showPage('historyPage');loadHistory()">
+            Riwayat Proyek QR Kamu
+        </button>
+
+    </div>
+
+</div>
+
+<!-- GENERATOR -->
+<div id="generatorPage" class="page">
+
+    <div class="section">
+
+        <h2>Buat Kode QR</h2>
+
+        <label>Jenis QR</label>
+
+        <select id="qrType" onchange="changeQRType()">
+            <option value="url">Masukkan URL</option>
+            <option value="text">Teks</option>
+        </select>
+
+        <label id="dataLabel">URL</label>
+
+        <textarea
+            id="qrData"
+            placeholder="Contoh: https://example.com">
+        </textarea>
+
+        <label>Judul QR</label>
+
+        <input
+            id="qrTitleInput"
+            placeholder="Contoh: Website Saya">
+
+        <label>Posisi Judul</label>
+
+        <select id="titleAlign">
+            <option value="left">Kiri</option>
+            <option value="center" selected>Tengah</option>
+            <option value="right">Kanan</option>
+        </select>
+
+        <label>Gaya Judul</label>
+
+        <select id="titleStyle">
+            <option value="normal">Normal</option>
+            <option value="bold">Bold</option>
+            <option value="italic">Italic</option>
+            <option value="bolditalic">Bold Italic</option>
+        </select>
+
+    </div>
+
+    <!-- MODULE -->
+    <div class="section">
+
+        <h2>Bentuk Modul QR</h2>
+
+        <select id="moduleShape">
+
+            <option value="square">Kotak</option>
+            <option value="circle">Lingkaran</option>
+            <option value="rounded">Rounded</option>
+            <option value="heart">Heart</option>
+            <option value="star">Star</option>
+            <option value="triangle">Triangle</option>
+            <option value="plus">Plus</option>
+            <option value="pentagon">Pentagon</option>
+
+        </select>
+
+        <div class="info">
+            Pola fungsional QR seperti finder,
+            timing dan alignment tetap dipertahankan.
+        </div>
+
+    </div>
+
+    <!-- EYE -->
+    <div class="section">
+
+        <h2>Mata QR</h2>
+
+        <select id="eyeShape">
+
+            <option value="square">Kotak</option>
+            <option value="rounded">Rounded</option>
+
+        </select>
+
+        <div class="info">
+            Mata QR menggunakan struktur 7×7 yang benar.
+            Warna mata menggunakan warna atau gradient
+            yang sama dengan modul QR.
+        </div>
+
+    </div>
+
+    <!-- COLORS -->
+    <div class="section">
+
+        <h2>Warna QR</h2>
+
+        <div class="colorGrid">
+
+            <button
+                class="colorBtn active"
+                data-color="black"
+                style="background:#000;color:#fff"
+                onclick="selectColor(this)">
+                Hitam
+            </button>
+
+            <button
+                class="colorBtn"
+                data-color="red"
+                style="background:#e00000;color:#fff"
+                onclick="selectColor(this)">
+                Merah
+            </button>
+
+            <button
+                class="colorBtn"
+                data-color="blue"
+                style="background:#005cff;color:#fff"
+                onclick="selectColor(this)">
+                Biru
+            </button>
+
+            <button
+                class="colorBtn"
+                data-color="green"
+                style="background:#00a83b;color:#fff"
+                onclick="selectColor(this)">
+                Hijau
+            </button>
+
+            <button
+                class="colorBtn"
+                data-color="purple"
+                style="background:#7b00ff;color:#fff"
+                onclick="selectColor(this)">
+                Ungu
+            </button>
+
+            <button
+                class="colorBtn"
+                data-color="orange"
+                style="background:#ff7800;color:#fff"
+                onclick="selectColor(this)">
+                Orange
+            </button>
+
+            <button
+                class="colorBtn"
+                data-color="yellow"
+                style="background:#c5a600;color:#000"
+                onclick="selectColor(this)">
+                Kuning
+            </button>
+
+            <button
+                class="colorBtn"
+                data-color="pink"
+                style="background:#ff1493;color:#fff"
+                onclick="selectColor(this)">
+                Pink
+            </button>
+
+            <button
+                class="colorBtn"
+                data-color="cyan"
+                style="background:#00bcd4;color:#000"
+                onclick="selectColor(this)">
+                Cyan
+            </button>
+
+            <button
+                class="colorBtn"
+                data-color="redblue"
+                style="background:linear-gradient(135deg,#e00000,#005cff);color:#fff"
+                onclick="selectColor(this)">
+                Merah+Biru
+            </button>
+
+            <button
+                class="colorBtn"
+                data-color="purpleblue"
+                style="background:linear-gradient(135deg,#7b00ff,#005cff);color:#fff"
+                onclick="selectColor(this)">
+                Ungu+Biru
+            </button>
+
+            <button
+                class="colorBtn"
+                data-color="redyellow"
+                style="background:linear-gradient(135deg,#e00000,#ffd700);color:#000"
+                onclick="selectColor(this)">
+                Merah+Kuning
+            </button>
+
+            <button
+                class="colorBtn"
+                data-color="greenblue"
+                style="background:linear-gradient(135deg,#00a83b,#005cff);color:#fff"
+                onclick="selectColor(this)">
+                Hijau+Biru
+            </button>
+
+            <button
+                class="colorBtn"
+                data-color="orangepurple"
+                style="background:linear-gradient(135deg,#ff7800,#7b00ff);color:#fff"
+                onclick="selectColor(this)">
+                Orange+Ungu
+            </button>
+
+            <button
+                class="colorBtn"
+                data-color="cyanpink"
+                style="background:linear-gradient(135deg,#00bcd4,#ff1493);color:#fff"
+                onclick="selectColor(this)">
+                Cyan+Pink
+            </button>
+
+        </div>
+
+    </div>
+
+    <button class="action" onclick="generateQR()">
+        Generate QR
+    </button>
+
+    <button
+        class="action secondary"
+        onclick="showPage('homePage')">
+        Kembali
+    </button>
+
+    <!-- QR RESULT -->
+    <div id="qrArea">
+
+        <div id="qrTitle"></div>
+
+        <canvas id="qrCanvas"></canvas>
+
+        <button
+            class="action"
+            onclick="openDownloadPopup()">
+            Download QR
+        </button>
+
+        <button
+            class="action secondary"
+            onclick="saveProject()">
+            Simpan Proyek
+        </button>
+
+        <button
+            class="action secondary"
+            onclick="resetGenerator()">
+            Buat QR Baru
+        </button>
+
+    </div>
+
+</div>
+
+<!-- HISTORY -->
+<div id="historyPage" class="page">
+
+    <div class="section">
+
+        <h2>Riwayat Proyek QR Kamu</h2>
+
+        <div id="historyList"></div>
+
+    </div>
+
+    <button
+        class="action secondary"
+        onclick="showPage('homePage')">
+        Kembali
+    </button>
+
+</div>
+
+<!-- DOWNLOAD POPUP -->
+<div id="downloadPopup" class="popup">
+
+    <div class="popupBox">
+
+        <h3>Download QR</h3>
+
+        <p>
+            Apakah kamu yakin mendownload file ini?
+        </p>
+
+        <div class="popupButtons">
+
+            <button onclick="closeDownloadPopup()">
+                Batalkan
+            </button>
+
+            <button
+                class="yes"
+                onclick="downloadQR()">
+                Download
+            </button>
+
+        </div>
+
+    </div>
+
+</div>
+
+<footer>
+    ARZ QR Generator
+</footer>
+
+<script>
+
+/* =====================================================
+   QR LIBRARY
+===================================================== */
+
+function loadQRLibrary(){
+
+    return new Promise((resolve,reject)=>{
+
+        if(typeof qrcode === "function"){
+            resolve();
+            return;
+        }
+
+        const sources = [
+
+            "https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js",
+
+            "https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"
+
+        ];
+
+        let index = 0;
+
+        function next(){
+
+            if(index >= sources.length){
+
+                reject(
+                    new Error("QR library gagal dimuat")
+                );
+
+                return;
+            }
+
+            const script =
+                document.createElement("script");
+
+            script.src = sources[index++];
+
+            script.onload = ()=>{
+
+                if(typeof qrcode === "function"){
+                    resolve();
+                }else{
+                    next();
+                }
+
+            };
+
+            script.onerror = ()=>{
+                next();
+            };
+
+            document.head.appendChild(script);
+        }
+
+        next();
+
+    });
+
+}
+
+
+/* =====================================================
+   LOADING
+===================================================== */
+
+window.addEventListener("load",()=>{
+
+    setTimeout(()=>{
+
+        const loading =
+            document.getElementById("loadingScreen");
+
+        loading.style.transition =
+            "opacity .5s";
+
+        loading.style.opacity = "0";
+
+        setTimeout(()=>{
+
+            loading.style.display = "none";
+
+        },500);
+
+    },1000);
+
+});
+
+
+/* =====================================================
+   PAGE
+===================================================== */
+
+function showPage(id){
+
+    document
+        .querySelectorAll(".page")
+        .forEach(page=>{
+            page.classList.remove("active");
+        });
+
+    document
+        .getElementById(id)
+        .classList.add("active");
+
+    window.scrollTo(0,0);
+}
+
+
+/* =====================================================
+   QR TYPE
+===================================================== */
+
+function changeQRType(){
+
+    const type =
+        document.getElementById("qrType").value;
+
+    const label =
+        document.getElementById("dataLabel");
+
+    const input =
+        document.getElementById("qrData");
+
+    if(type === "url"){
+
+        label.textContent = "URL";
+
+        input.placeholder =
+            "Contoh: https://example.com";
+
+    }else{
+
+        label.textContent = "Teks";
+
+        input.placeholder =
+            "Masukkan teks yang ingin dibuat menjadi QR";
+
+    }
+
+}
+
+
+/* =====================================================
+   COLORS
+===================================================== */
+
+let selectedColor = "black";
+
+const colorValues = {
+
+    black:"#000000",
+    red:"#e00000",
+    blue:"#005cff",
+    green:"#00a83b",
+    purple:"#7b00ff",
+    orange:"#ff7800",
+    yellow:"#c5a600",
+    pink:"#ff1493",
+    cyan:"#00bcd4"
+
+};
+
+
+const gradientColors = {
+
+    redblue:[
+        "#e00000",
+        "#005cff"
+    ],
+
+    purpleblue:[
+        "#7b00ff",
+        "#005cff"
+    ],
+
+    redyellow:[
+        "#e00000",
+        "#ffd700"
+    ],
+
+    greenblue:[
+        "#00a83b",
+        "#005cff"
+    ],
+
+    orangepurple:[
+        "#ff7800",
+        "#7b00ff"
+    ],
+
+    cyanpink:[
+        "#00bcd4",
+        "#ff1493"
+    ]
+
+};
+
+
+function selectColor(button){
+
+    document
+        .querySelectorAll(".colorBtn")
+        .forEach(btn=>{
+            btn.classList.remove("active");
+        });
+
+    button.classList.add("active");
+
+    selectedColor =
+        button.dataset.color;
+
+}
+
+
+/* =====================================================
+   QR COLOR
+   SATU GRADIENT UNTUK MODUL + MATA
+===================================================== */
+
+function createQRColor(ctx,canvas){
+
+    if(gradientColors[selectedColor]){
+
+        const colors =
+            gradientColors[selectedColor];
+
+        const gradient =
+            ctx.createLinearGradient(
+                0,
+                0,
+                canvas.width,
+                canvas.height
+            );
+
+        gradient.addColorStop(
+            0,
+            colors[0]
+        );
+
+        gradient.addColorStop(
+            1,
+            colors[1]
+        );
+
+        return gradient;
+    }
+
+    return colorValues[selectedColor] || "#000000";
+
+}
+
+
+/* =====================================================
+   ALIGNMENT PATTERN
+===================================================== */
+
+const alignmentPositions = [
+
+    [],
+
+    [],
+
+    [6,18],
+
+    [6,22],
+
+    [6,26],
+
+    [6,30],
+
+    [6,34],
+
+    [6,22,38],
+
+    [6,24,42],
+
+    [6,26,46],
+
+    [6,28,50],
+
+    [6,30,54],
+
+    [6,32,58],
+
+    [6,34,62],
+
+    [6,26,46,66],
+
+    [6,26,48,70],
+
+    [6,26,50,74],
+
+    [6,30,54,78],
+
+    [6,30,56,82],
+
+    [6,30,58,86],
+
+    [6,34,62,90],
+
+    [6,28,50,72,94],
+
+    [6,26,50,74,98],
+
+    [6,30,54,78,102],
+
+    [6,28,54,80,106],
+
+    [6,32,58,84,110],
+
+    [6,30,58,86,114],
+
+    [6,34,62,90,118],
+
+    [6,26,50,74,98,122],
+
+    [6,30,54,78,102,126],
+
+    [6,26,52,78,104,130],
+
+    [6,30,56,82,108,134],
+
+    [6,34,60,86,112,138],
+
+    [6,30,58,86,114,142],
+
+    [6,34,62,90,118,146],
+
+    [6,30,54,78,102,126,150],
+
+    [6,24,50,76,102,128,154],
+
+    [6,28,54,80,106,132,158],
+
+    [6,32,58,84,110,136,162],
+
+    [6,26,54,82,110,138,166],
+
+    [6,30,58,86,114,142,170]
+
+];
+
+
+/* =====================================================
+   FINDER AREA
+===================================================== */
+
+function isFinderArea(r,c,n){
+
+    return (
+
+        (r < 7 && c < 7) ||
+
+        (r < 7 && c >= n-7) ||
+
+        (r >= n-7 && c < 7)
+
+    );
+
+}
+
+
+/* =====================================================
+   ALIGNMENT AREA
+===================================================== */
+
+function isAlignmentArea(r,c,n,version){
+
+    if(version < 2){
+        return false;
+    }
+
+    const positions =
+        alignmentPositions[version-1] || [];
+
+    for(const row of positions){
+
+        for(const col of positions){
+
+            if(
+                (row <= 8 && col <= 8) ||
+
+                (row <= 8 && col >= n-9) ||
+
+                (row >= n-9 && col <= 8)
+            ){
+                continue;
+            }
+
+            if(
+                r >= row-2 &&
+                r <= row+2 &&
+                c >= col-2 &&
+                c <= col+2
+            ){
+                return true;
+            }
+
+        }
+
+    }
+
+    return false;
+
+}
+
+
+/* =====================================================
+   FUNCTION MODULE
+===================================================== */
+
+function isFunctionModule(r,c,n,version){
+
+    if(isFinderArea(r,c,n)){
+        return true;
+    }
+
+    /* Timing */
+
+    if(r === 6 || c === 6){
+        return true;
+    }
+
+    /* Alignment */
+
+    if(
+        isAlignmentArea(
+            r,
+            c,
+            n,
+            version
+        )
+    ){
+        return true;
+    }
+
+    /* Format information */
+
+    if(
+        (r <= 8 &&
+            (c <= 8 || c >= n-8)) ||
+
+        (c <= 8 &&
+            (r <= 8 || r >= n-8))
+    ){
+        return true;
+    }
+
+    /* Version information */
+
+    if(version >= 7){
+
+        if(
+            (r < 6 &&
+                c >= n-11 &&
+                c < n-8) ||
+
+            (c < 6 &&
+                r >= n-11 &&
+                r < n-8)
+        ){
+            return true;
+        }
+
+    }
+
+    return false;
+
+}
+
+
+/* =====================================================
+   DRAW MODULE SHAPE
+===================================================== */
+
+function drawShape(
+    ctx,
+    x,
+    y,
+    size,
+    shape,
+    color
+){
+
+    ctx.fillStyle = color;
+
+    ctx.beginPath();
+
+    /* SQUARE */
+
+    if(shape === "square"){
+
+        ctx.fillRect(
+            x,
+            y,
+            size,
+            size
+        );
+
+        return;
+    }
+
+
+    /* CIRCLE */
+
+    if(shape === "circle"){
+
+        ctx.arc(
+            x + size/2,
+            y + size/2,
+            size*.43,
+            0,
+            Math.PI*2
+        );
+
+        ctx.fill();
+
+        return;
+    }
+
+
+    /* ROUNDED */
+
+    if(shape === "rounded"){
+
+        const radius = size*.18;
+
+        ctx.roundRect(
+            x+size*.08,
+            y+size*.08,
+            size*.84,
+            size*.84,
+            radius
+        );
+
+        ctx.fill();
+
+        return;
+    }
+
+
+    /* TRIANGLE */
+
+    if(shape === "triangle"){
+
+        ctx.moveTo(
+            x+size/2,
+            y+size*.08
+        );
+
+        ctx.lineTo(
+            x+size*.92,
+            y+size*.92
+        );
+
+        ctx.lineTo(
+            x+size*.08,
+            y+size*.92
+        );
+
+        ctx.closePath();
+
+        ctx.fill();
+
+        return;
+    }
+
+
+    /* HEART */
+
+    if(shape === "heart"){
+
+        ctx.moveTo(
+            x+size/2,
+            y+size*.9
+        );
+
+        ctx.bezierCurveTo(
+            x-size*.05,
+            y+size*.55,
+            x+size*.05,
+            y+size*.05,
+            x+size/2,
+            y+size*.35
+        );
+
+        ctx.bezierCurveTo(
+            x+size*.95,
+            y+size*.05,
+            x+size*1.05,
+            y+size*.55,
+            x+size/2,
+            y+size*.9
+        );
+
+        ctx.closePath();
+
+        ctx.fill();
+
+        return;
+    }
+
+
+    /* STAR */
+
+    if(shape === "star"){
+
+        const cx =
+            x+size/2;
+
+        const cy =
+            y+size/2;
+
+        for(let i=0;i<10;i++){
+
+            const angle =
+                -Math.PI/2 +
+                i*Math.PI/5;
+
+            const radius =
+                i%2===0
+                ? size*.45
+                : size*.20;
+
+            const px =
+                cx+Math.cos(angle)*radius;
+
+            const py =
+                cy+Math.sin(angle)*radius;
+
+            if(i===0){
+                ctx.moveTo(px,py);
+            }else{
+                ctx.lineTo(px,py);
+            }
+
+        }
+
+        ctx.closePath();
+
+        ctx.fill();
+
+        return;
+    }
+
+
+    /* PLUS */
+
+    if(shape === "plus"){
+
+        const a =
+            size*.32;
+
+        ctx.moveTo(
+            x+a,
+            y
+        );
+
+        ctx.lineTo(
+            x+size-a,
+            y
+        );
+
+        ctx.lineTo(
+            x+size-a,
+            y+a
+        );
+
+        ctx.lineTo(
+            x+size,
+            y+a
+        );
+
+        ctx.lineTo(
+            x+size,
+            y+size-a
+        );
+
+        ctx.lineTo(
+            x+size-a,
+            y+size-a
+        );
+
+        ctx.lineTo(
+            x+size-a,
+            y+size
+        );
+
+        ctx.lineTo(
+            x+a,
+            y+size
+        );
+
+        ctx.lineTo(
+            x+a,
+            y+size-a
+        );
+
+        ctx.lineTo(
+            x,
+            y+size-a
+        );
+
+        ctx.lineTo(
+            x,
+            y+a
+        );
+
+        ctx.lineTo(
+            x+a,
+            y+a
+        );
+
+        ctx.closePath();
+
+        ctx.fill();
+
+        return;
+    }
+
+
+    /* PENTAGON */
+
+    if(shape === "pentagon"){
+
+        const cx =
+            x+size/2;
+
+        const cy =
+            y+size/2;
+
+        for(let i=0;i<5;i++){
+
+            const angle =
+                -Math.PI/2 +
+                i*Math.PI*2/5;
+
+            const px =
+                cx+
+                Math.cos(angle)*size*.45;
+
+            const py =
+                cy+
+                Math.sin(angle)*size*.45;
+
+            if(i===0){
+                ctx.moveTo(px,py);
+            }else{
+                ctx.lineTo(px,py);
+            }
+
+        }
+
+        ctx.closePath();
+
+        ctx.fill();
+
+        return;
+    }
+
+}
+
+
+/* =====================================================
+   DRAW FINDER / MATA QR
+===================================================== */
+
+function drawFinder(
+    ctx,
+    x,
+    y,
+    size,
+    eyeShape,
+    color
+){
+
+    const unit =
+        size / 7;
+
+    ctx.save();
+
+    /*
+       OUTER 7x7
+    */
+
+    ctx.fillStyle = color;
+
+    if(eyeShape === "rounded"){
+
+        ctx.beginPath();
+
+        ctx.roundRect(
+            x,
+            y,
+            size,
+            size,
+            unit*.75
+        );
+
+        ctx.fill();
+
+    }else{
+
+        ctx.fillRect(
+            x,
+            y,
+            size,
+            size
+        );
+
+    }
+
+
+    /*
+       WHITE 5x5
+    */
+
+    ctx.fillStyle = "#fff";
+
+    if(eyeShape === "rounded"){
+
+        ctx.beginPath();
+
+        ctx.roundRect(
+            x+unit,
+            y+unit,
+            unit*5,
+            unit*5,
+            unit*.35
+        );
+
+        ctx.fill();
+
+    }else{
+
+        ctx.fillRect(
+            x+unit,
+            y+unit,
+            unit*5,
+            unit*5
+        );
+
+    }
+
+
+    /*
+       CENTER 3x3
+    */
+
+    ctx.fillStyle = color;
+
+    if(eyeShape === "rounded"){
+
+        ctx.beginPath();
+
+        ctx.roundRect(
+            x+unit*2,
+            y+unit*2,
+            unit*3,
+            unit*3,
+            unit*.35
+        );
+
+        ctx.fill();
+
+    }else{
+
+        ctx.fillRect(
+            x+unit*2,
+            y+unit*2,
+            unit*3,
+            unit*3
+        );
+
+    }
+
+    ctx.restore();
+
+}
+
+
+/* =====================================================
+   GENERATE
+===================================================== */
+
+let currentQRData = null;
+
+
+async function generateQR(){
+
+    const type =
+        document.getElementById("qrType").value;
+
+    let data =
+        document
+        .getElementById("qrData")
+        .value
+        .trim();
+
+    const title =
+        document
+        .getElementById("qrTitleInput")
+        .value
+        .trim();
+
+
+    if(!data){
+
+        alert(
+            "Masukkan URL atau teks terlebih dahulu."
+        );
+
+        return;
+    }
+
+
+    if(
+        type === "url" &&
+        !/^https?:\/\//i.test(data)
+    ){
+
+        data =
+            "https://" + data;
+
+    }
+
+
+    try{
+
+        await loadQRLibrary();
+
+    }catch(error){
+
+        alert(
+            "QR library gagal dimuat. Pastikan internet aktif."
+        );
+
+        return;
+    }
+
+
+    let qr;
+
+
+    try{
+
+        qr =
+            qrcode(0,"H");
+
+        qr.addData(data);
+
+        qr.make();
+
+    }catch(error){
+
+        alert(
+            "Data terlalu panjang untuk dibuat menjadi QR."
+        );
+
+        return;
+    }
+
+
+    const count =
+        qr.getModuleCount();
+
+    const version =
+        Math.round((count-17)/4);
+
+    const cell = 12;
+
+    const quiet = 4;
+
+    const total =
+        (count + quiet*2) * cell;
+
+
+    const canvas =
+        document.getElementById("qrCanvas");
+
+    const ctx =
+        canvas.getContext("2d");
+
+
+    canvas.width =
+        total;
+
+    canvas.height =
+        total;
+
+
+    /*
+       BACKGROUND
+    */
+
+    ctx.fillStyle = "#fff";
+
+    ctx.fillRect(
+        0,
+        0,
+        total,
+        total
+    );
+
+
+    /*
+       WARNA UTAMA
+       SATU OBJECT UNTUK MODUL + MATA
+    */
+
+    const qrColor =
+        createQRColor(
+            ctx,
+            canvas
+        );
+
+
+    const moduleShape =
+        document
+        .getElementById("moduleShape")
+        .value;
+
+    const eyeShape =
+        document
+        .getElementById("eyeShape")
+        .value;
+
+
+    /*
+       GAMBAR MODUL
+    */
+
+    for(let r=0;r<count;r++){
+
+        for(let c=0;c<count;c++){
+
+            if(!qr.isDark(r,c)){
+                continue;
+            }
+
+
+            /*
+               Mata/finder dilewati.
+               Akan digambar secara khusus
+               setelah semua modul selesai.
+            */
+
+            if(
+                isFinderArea(
+                    r,
+                    c,
+                    count
+                )
+            ){
+
+                continue;
+            }
+
+
+            const x =
+                (c+quiet)*cell;
+
+            const y =
+                (r+quiet)*cell;
+
+
+            const functionModule =
+                isFunctionModule(
+                    r,
+                    c,
+                    count,
+                    version
+                );
+
+
+            if(functionModule){
+
+                /*
+                   Function module menggunakan
+                   warna yang sama.
+                */
+
+                ctx.fillStyle =
+                    qrColor;
+
+                ctx.fillRect(
+                    x,
+                    y,
+                    cell,
+                    cell
+                );
+
+            }else{
+
+                /*
+                   Data module.
+                */
+
+                drawShape(
+                    ctx,
+                    x,
+                    y,
+                    cell,
+                    moduleShape,
+                    qrColor
+                );
+
+            }
+
+        }
+
+    }
+
+
+    /*
+       GAMBAR 3 MATA QR
+       MENGGUNAKAN qrColor YANG SAMA.
+    */
+
+    const finderSize =
+        cell * 7;
+
+
+    /* KIRI ATAS */
+
+    drawFinder(
+        ctx,
+        quiet*cell,
+        quiet*cell,
+        finderSize,
+        eyeShape,
+        qrColor
+    );
+
+
+    /* KANAN ATAS */
+
+    drawFinder(
+        ctx,
+        total -
+        quiet*cell -
+        finderSize,
+        quiet*cell,
+        finderSize,
+        eyeShape,
+        qrColor
+    );
+
+
+    /* KIRI BAWAH */
+
+    drawFinder(
+        ctx,
+        quiet*cell,
+        total -
+        quiet*cell -
+        finderSize,
+        finderSize,
+        eyeShape,
+        qrColor
+    );
+
+
+    /*
+       TITLE
+    */
+
+    const titleElement =
+        document.getElementById("qrTitle");
+
+    titleElement.textContent =
+        title;
+
+
+    titleElement.style.textAlign =
+        document.getElementById("titleAlign").value;
+
+
+    const titleStyle =
+        document.getElementById("titleStyle").value;
+
+
+    titleElement.style.fontWeight =
+        (
+            titleStyle === "bold" ||
+            titleStyle === "bolditalic"
+        )
+        ? "bold"
+        : "normal";
+
+
+    titleElement.style.fontStyle =
+        (
+            titleStyle === "italic" ||
+            titleStyle === "bolditalic"
+        )
+        ? "italic"
+        : "normal";
+
+
+    document
+        .getElementById("qrArea")
+        .style.display = "block";
+
+
+    /*
+       SIMPAN CONFIG
+    */
+
+    currentQRData = {
+
+        data:data,
+
+        title:title,
+
+        type:type,
+
+        color:selectedColor,
+
+        moduleShape:moduleShape,
+
+        eyeShape:eyeShape,
+
+        titleAlign:
+            document
+            .getElementById("titleAlign")
+            .value,
+
+        titleStyle:
+            titleStyle
+
+    };
+
+
+    setTimeout(()=>{
+
+        document
+            .getElementById("qrArea")
+            .scrollIntoView({
+                behavior:"smooth"
+            });
+
+    },100);
+
+}
+
+
+/* =====================================================
+   DOWNLOAD POPUP
+===================================================== */
+
+function openDownloadPopup(){
+
+    if(!currentQRData){
+
+        alert(
+            "Generate QR terlebih dahulu."
+        );
+
+        return;
+    }
+
+    document
+        .getElementById("downloadPopup")
+        .style.display = "flex";
+
+}
+
+
+function closeDownloadPopup(){
+
+    document
+        .getElementById("downloadPopup")
+        .style.display = "none";
+
+}
+
+
+/* =====================================================
+   DOWNLOAD PNG
+   VERSI BARU UNTUK ANDROID
+===================================================== */
+
+function downloadQR(){
+
+    const canvas =
+        document.getElementById("qrCanvas");
+
+
+    if(
+        !canvas ||
+        !canvas.width ||
+        !canvas.height
+    ){
+
+        alert(
+            "QR belum tersedia."
+        );
+
+        return;
+    }
+
+
+    const filename =
+        "ARZ-QR-Generator-" +
+        Date.now() +
+        ".png";
+
+
+    /*
+       METODE UTAMA:
+       Canvas -> Blob -> Object URL
+    */
+
+    canvas.toBlob(function(blob){
+
+        if(!blob){
+
+            downloadFallback(
+                canvas,
+                filename
+            );
+
+            return;
+        }
+
+
+        try{
+
+            const url =
+                URL.createObjectURL(blob);
+
+
+            const link =
+                document.createElement("a");
+
+
+            link.href = url;
+
+            link.download =
+                filename;
+
+            link.target = "_blank";
+
+            link.rel = "noopener";
+
+
+            document.body.appendChild(link);
+
+
+            /*
+               Klik langsung dari user gesture.
+            */
+
+            link.click();
+
+
+            document.body.removeChild(link);
+
+
+            setTimeout(()=>{
+
+                URL.revokeObjectURL(url);
+
+            },3000);
+
+
+            closeDownloadPopup();
+
+
+        }catch(error){
+
+            downloadFallback(
+                canvas,
+                filename
+            );
+
+        }
+
+    },"image/png");
+
+}
+
+
+/* =====================================================
+   DOWNLOAD FALLBACK
+===================================================== */
+
+function downloadFallback(
+    canvas,
+    filename
+){
+
+    try{
+
+        const data =
+            canvas.toDataURL(
+                "image/png"
+            );
+
+
+        const link =
+            document.createElement("a");
+
+
+        link.href = data;
+
+        link.download =
+            filename;
+
+        link.target = "_blank";
+
+
+        document.body.appendChild(link);
+
+        link.click();
+
+        document.body.removeChild(link);
+
+
+        closeDownloadPopup();
+
+
+    }catch(error){
+
+        /*
+           Fallback terakhir:
+           buka gambar PNG di tab baru.
+        */
+
+        try{
+
+            const data =
+                canvas.toDataURL(
+                    "image/png"
+                );
+
+            const newWindow =
+                window.open(
+                    "",
+                    "_blank"
+                );
+
+            if(newWindow){
+
+                newWindow.document.write(
+                    "<title>ARZ QR</title>"
+                );
+
+                newWindow.document.write(
+                    "<img src='" +
+                    data +
+                    "' style='max-width:100%'>"
+                );
+
+                newWindow.document.close();
+
+                closeDownloadPopup();
+
+            }else{
+
+                alert(
+                    "Browser memblokir download. Izinkan pop-up untuk situs ini."
+                );
+
+            }
+
+        }catch(e){
+
+            alert(
+                "Download tidak dapat dilakukan pada browser ini."
+            );
+
+        }
+
+    }
+
+}
+
+
+/* =====================================================
+   SAVE PROJECT
+===================================================== */
+
+function saveProject(){
+
+    if(!currentQRData){
+
+        alert(
+            "Generate QR terlebih dahulu."
+        );
+
+        return;
+    }
+
+
+    const history =
+        JSON.parse(
+            localStorage.getItem(
+                "arzQRHistory"
+            ) || "[]"
+        );
+
+
+    history.unshift({
+
+        id:Date.now(),
+
+        ...currentQRData,
+
+        date:
+            new Date()
+            .toLocaleString("id-ID")
+
+    });
+
+
+    localStorage.setItem(
+        "arzQRHistory",
+        JSON.stringify(history)
+    );
+
+
+    alert(
+        "Proyek QR berhasil disimpan."
+    );
+
+}
+
+
+/* =====================================================
+   ESCAPE HTML
+===================================================== */
+
+function escapeHTML(value){
+
+    const div =
+        document.createElement("div");
+
+    div.textContent =
+        value == null
+        ? ""
+        : String(value);
+
+    return div.innerHTML;
+
+}
+
+
+/* =====================================================
+   HISTORY
+===================================================== */
+
+function loadHistory(){
+
+    const container =
+        document.getElementById(
+            "historyList"
+        );
+
+
+    const history =
+        JSON.parse(
+            localStorage.getItem(
+                "arzQRHistory"
+            ) || "[]"
+        );
+
+
+    container.innerHTML = "";
+
+
+    if(!history.length){
+
+        container.innerHTML =
+            '<div class="empty">' +
+            'Belum ada proyek QR.' +
+            '</div>';
+
+        return;
+    }
+
+
+    history.forEach(item=>{
+
+        const div =
+            document.createElement("div");
+
+        div.className =
+            "historyItem";
+
+
+        div.innerHTML = `
+
+            <strong>
+                ${escapeHTML(
+                    item.title ||
+                    "Tanpa Judul"
+                )}
+            </strong>
+
+            <small>
+                Tipe:
+                ${escapeHTML(item.type)}
+            </small>
+
+            <small>
+                Isi:
+                ${escapeHTML(item.data)}
+            </small>
+
+            <small>
+                Dibuat:
+                ${escapeHTML(item.date)}
+            </small>
+
+            <div class="historyButtons">
+
+                <button
+                    onclick="useHistory(${item.id})">
+                    Gunakan
+                </button>
+
+                <button
+                    onclick="deleteHistory(${item.id})">
+                    Hapus
+                </button>
+
+            </div>
+
+        `;
+
+
+        container.appendChild(div);
+
+    });
+
+}
+
+
+/* =====================================================
+   USE HISTORY
+===================================================== */
+
+function useHistory(id){
+
+    const history =
+        JSON.parse(
+            localStorage.getItem(
+                "arzQRHistory"
+            ) || "[]"
+        );
+
+
+    const item =
+        history.find(
+            x => x.id === id
+        );
+
+
+    if(!item){
+        return;
+    }
+
+
+    showPage(
+        "generatorPage"
+    );
+
+
+    document
+        .getElementById("qrType")
+        .value =
+        item.type;
+
+
+    document
+        .getElementById("qrData")
+        .value =
+        item.data;
+
+
+    document
+        .getElementById("qrTitleInput")
+        .value =
+        item.title || "";
+
+
+    document
+        .getElementById("titleAlign")
+        .value =
+        item.titleAlign ||
+        "center";
+
+
+    document
+        .getElementById("titleStyle")
+        .value =
+        item.titleStyle ||
+        "normal";
+
+
+    document
+        .getElementById("moduleShape")
+        .value =
+        item.moduleShape ||
+        "square";
+
+
+    document
+        .getElementById("eyeShape")
+        .value =
+        item.eyeShape ||
+        "square";
+
+
+    selectedColor =
+        item.color ||
+        "black";
+
+
+    document
+        .querySelectorAll(".colorBtn")
+        .forEach(btn=>{
+
+            btn.classList.toggle(
+                "active",
+                btn.dataset.color ===
+                selectedColor
+            );
+
+        });
+
+
+    changeQRType();
+
+    generateQR();
+
+}
+
+
+/* =====================================================
+   DELETE HISTORY
+===================================================== */
+
+function deleteHistory(id){
+
+    if(
+        !confirm(
+            "Hapus proyek QR ini?"
+        )
+    ){
+        return;
+    }
+
+
+    let history =
+        JSON.parse(
+            localStorage.getItem(
+                "arzQRHistory"
+            ) || "[]"
+        );
+
+
+    history =
+        history.filter(
+            item => item.id !== id
+        );
+
+
+    localStorage.setItem(
+        "arzQRHistory",
+        JSON.stringify(history)
+    );
+
+
+    loadHistory();
+
+}
+
+
+/* =====================================================
+   RESET
+===================================================== */
+
+function resetGenerator(){
+
+    document
+        .getElementById("qrData")
+        .value = "";
+
+
+    document
+        .getElementById("qrTitleInput")
+        .value = "";
+
+
+    document
+        .getElementById("qrType")
+        .value = "url";
+
+
+    document
+        .getElementById("titleAlign")
+        .value = "center";
+
+
+    document
+        .getElementById("titleStyle")
+        .value = "normal";
+
+
+    document
+        .getElementById("moduleShape")
+        .value = "square";
+
+
+    document
+        .getElementById("eyeShape")
+        .value = "square";
+
+
+    document
+        .getElementById("qrArea")
+        .style.display = "none";
+
+
+    selectedColor =
+        "black";
+
+
+    document
+        .querySelectorAll(".colorBtn")
+        .forEach(btn=>{
+
+            btn.classList.toggle(
+                "active",
+                btn.dataset.color === "black"
+            );
+
+        });
+
+
+    currentQRData = null;
+
+    changeQRType();
+
+}
+
+
+/* =====================================================
+   POPUP CLICK OUTSIDE
+===================================================== */
+
+document
+    .getElementById("downloadPopup")
+    .addEventListener(
+        "click",
+        function(e){
+
+            if(
+                e.target ===
+                e.currentTarget
+            ){
+
+                closeDownloadPopup();
+
+            }
+
+        }
+    );
+
+
+/* INITIAL */
+
+changeQRType();
+
+</script>
+
+</body>
+</html>
